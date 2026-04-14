@@ -1,0 +1,53 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+  engineType      = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["auth", "public"]
+}
+
+// --- ESQUEMA PUBLIC ---
+
+model Note {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  title       String
+  contentList Json?     @default("[]") @map("content_list")
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+  
+  // Relación con el perfil
+  profile     Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notes")
+  @@index([createdAt(sort: Desc)], map: "idx_notes_created_at")
+  @@schema("public")
+}
+
+model Profile {
+  id        String    @id @db.Uuid
+  email     String?   @unique
+  updatedAt DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+  
+  // Relaciones
+  notes     Note[]
+  user      User      @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+  @@schema("public")
+}
+
+// --- ESQUEMA AUTH (Supabase Interno) ---
+
+// Solo mapeamos los campos de 'users' que realmente nos sirven para relacionar
+model User {
+  id      String   @id @db.Uuid
+  email   String?  @unique
+  profile Profile?
+
+  @@map("users")
+  @@schema("auth")
+}
