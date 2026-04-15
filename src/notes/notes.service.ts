@@ -20,7 +20,9 @@ export class NotesService {
     });
   }
 
-  getAllByUserId(userId: string): Promise<Pick<Note, 'id' | 'title' | 'contentList'>[]> {
+  getAllByUserId(
+    userId: string,
+  ): Promise<Pick<Note, 'id' | 'title' | 'contentList'>[]> {
     return this.prisma.note.findMany({
       where: { userId },
       select: {
@@ -47,5 +49,16 @@ export class NotesService {
         ...(contentList !== undefined && { contentList }),
       },
     });
+  }
+
+  deleteById(userId: string, noteId: string): Promise<{ id: string }> {
+    return this.prisma.note
+      .delete({
+        where: {
+          id: noteId,
+          userId,
+        },
+      })
+      .then(() => ({ id: noteId })); // Retorna solo el ID después de eliminar
   }
 }

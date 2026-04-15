@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -21,9 +22,7 @@ export class NotesController {
 
   @Get()
   @UseGuards(SupabaseAuthGuard)
-  getAll(
-    @Req() request: Request & { user?: { id: string } },
-  ) {
+  getAll(@Req() request: Request & { user?: { id: string } }) {
     const userId = request.user?.id;
 
     if (!userId) {
@@ -71,5 +70,20 @@ export class NotesController {
       dto.title,
       dto.contentList,
     );
+  }
+
+  @Delete(':id')
+  @UseGuards(SupabaseAuthGuard)
+  delete(
+    @Param('id') noteId: string,
+    @Req() request: Request & { user?: { id: string } },
+  ) {
+    const userId = request.user?.id;
+
+    if (!userId) {
+      throw new UnauthorizedException('User not found in request');
+    }
+
+    return this.notesService.deleteById(userId, noteId);
   }
 }
