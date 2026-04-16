@@ -8,6 +8,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'http://localhost:5173',
+      'http://localhost:5174/thinking-notes/',
       // Agrega tu URL de GitHub Pages aquí
       'https://lautarojson.github.io',
     ],
