@@ -1,11 +1,15 @@
 import {
   BadRequestException,
+  HttpExceptionOptions,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { Note } from '@prisma/client';
+type CustomExceptionOptions = Omit<HttpExceptionOptions, 'code'> & {
+  code: string;
+};
 
 @Injectable()
 export class NotesService {
@@ -73,7 +77,7 @@ export class NotesService {
 
       return { id: deletedNote.id };
     } catch (error) {
-      console.error('Error deleting note:', error);
+      console.error('Error deleting note:', error, error.code, error.message);
 
       if (error.code === 'P2007' || error.message.includes('uuid')) {
         throw new BadRequestException(
@@ -85,7 +89,11 @@ export class NotesService {
         throw new NotFoundException('La nota no existe o no tienes permisos');
       }
 
-      throw new InternalServerErrorException('No se pudo borrar la nota');
+      throw new InternalServerErrorException('No se pudo borrar la nota', {
+        cause: error,
+        message: error.message,
+        code: error.code,
+      } as CustomExceptionOptions);
     }
   }
 }
