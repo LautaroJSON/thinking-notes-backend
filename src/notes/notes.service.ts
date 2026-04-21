@@ -39,6 +39,9 @@ export class NotesService {
         title: true,
         contentList: true,
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
   }
 
