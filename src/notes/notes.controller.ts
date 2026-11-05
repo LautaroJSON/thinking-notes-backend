@@ -15,6 +15,7 @@ import { NotesService } from './notes.service';
 import { SupabaseAuthGuard } from '../guards/supabase-auth.guard';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
+import { ReorderNotesDto } from './dto/reorder-notes.dto';
 
 @Controller('notes')
 export class NotesController {
@@ -49,6 +50,22 @@ export class NotesController {
       dto.title,
       Array.isArray(dto.contentList) ? dto.contentList : [],
     );
+  }
+
+  // Debe declararse antes de @Put(':id') para que "order" no se tome como id
+  @Put('order')
+  @UseGuards(SupabaseAuthGuard)
+  reorder(
+    @Body() dto: ReorderNotesDto,
+    @Req() request: Request & { user?: { id: string } },
+  ) {
+    const userId = request.user?.id;
+
+    if (!userId) {
+      throw new UnauthorizedException('User not found in request');
+    }
+
+    return this.notesService.reorder(userId, dto.ids);
   }
 
   @Put(':id')
