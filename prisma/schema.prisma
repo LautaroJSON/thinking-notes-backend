@@ -18,12 +18,15 @@ model Note {
   contentList Json?     @default("[]") @map("content_list")
   createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime? @default(now()) @map("updated_at") @db.Timestamptz(6)
+  // Orden dentro de las notas del usuario (menor = más arriba)
+  position    Int       @default(0)
   
   // Relación con el perfil
   profile     Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notes")
   @@index([createdAt(sort: Desc)], map: "idx_notes_created_at")
+  @@index([userId, position], map: "idx_notes_user_position")
   @@schema("public")
 }
 
