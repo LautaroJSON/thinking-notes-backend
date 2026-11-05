@@ -11,6 +11,8 @@ async function bootstrap() {
       'http://localhost:5174/thinking-notes/#',
       // Agrega tu URL de GitHub Pages aquí
       'https://lautarojson.github.io',
+      // Deploy del frontend en Vercel
+      'https://thinking-notes.vercel.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
