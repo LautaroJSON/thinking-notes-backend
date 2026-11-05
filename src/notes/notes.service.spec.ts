@@ -22,6 +22,9 @@ const createPrismaMock = () => {
         .fn()
         .mockImplementation(({ data }: { data: unknown }) => data),
       findMany: jest.fn().mockResolvedValue([]),
+      update: jest
+        .fn()
+        .mockImplementation(({ data }: { data: unknown }) => data),
     },
     $transaction: jest.fn((fn: (t: typeof tx) => Promise<unknown>) => fn(tx)),
   };
@@ -116,6 +119,47 @@ describe('NotesService', () => {
           orderBy: [{ position: 'asc' }, { createdAt: 'desc' }],
         }),
       );
+    });
+
+    it('incluye las fechas de creación y última modificación', async () => {
+      await service.getAllByUserId(USER);
+
+      const [[{ select }]] = prisma.note.findMany.mock.calls as [
+        [{ select: Record<string, boolean> }],
+      ];
+      expect(select).toMatchObject({ createdAt: true, updatedAt: true });
+    });
+  });
+
+  describe('updateById', () => {
+    it('actualiza la fecha de última modificación', async () => {
+      const before = Date.now();
+
+      await service.updateById(USER, A, 'Nuevo título');
+
+      const [[{ data }]] = prisma.note.update.mock.calls as [
+        [{ data: { title: string; updatedAt: Date } }],
+      ];
+      expect(data.title).toBe('Nuevo título');
+      expect(data.updatedAt).toBeInstanceOf(Date);
+      expect(data.updatedAt.getTime()).toBeGreaterThanOrEqual(before);
+    });
+  });
+
+  describe('reorder (fechas)', () => {
+    it('no toca la fecha de última modificación', async () => {
+      tx.note.count.mockResolvedValue(2);
+
+      await service.reorder(USER, [B, A]);
+
+      const calls = [
+        ...(tx.note.update.mock.calls as [{ data: object }][]),
+        ...(tx.note.updateMany.mock.calls as [{ data: object }][]),
+      ];
+      const datas = calls.map(([args]) => args.data);
+      for (const data of datas) {
+        expect(data).not.toHaveProperty('updatedAt');
+      }
     });
   });
 });

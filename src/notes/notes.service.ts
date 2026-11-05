@@ -40,13 +40,17 @@ export class NotesService {
 
   getAllByUserId(
     userId: string,
-  ): Promise<Pick<Note, 'id' | 'title' | 'contentList'>[]> {
+  ): Promise<
+    Pick<Note, 'id' | 'title' | 'contentList' | 'createdAt' | 'updatedAt'>[]
+  > {
     return this.prisma.note.findMany({
       where: { userId },
       select: {
         id: true,
         title: true,
         contentList: true,
+        createdAt: true,
+        updatedAt: true,
       },
       orderBy: [{ position: 'asc' }, { createdAt: 'desc' }],
     });
@@ -67,6 +71,9 @@ export class NotesService {
         data: {
           ...(title !== undefined && { title }),
           ...(contentList !== undefined && { contentList }),
+          // Se marca a mano y no con @updatedAt: así reordenar (que también
+          // hace update sobre `position`) no cuenta como una modificación.
+          updatedAt: new Date(),
         },
       });
 
