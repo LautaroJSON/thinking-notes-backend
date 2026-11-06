@@ -146,6 +146,50 @@ describe('NotesService', () => {
     });
   });
 
+  describe('contentList tipado', () => {
+    const IMAGE_REF = `${USER}/${A}/${C}.webp`;
+
+    it('guarda los pensamientos validados al actualizar', async () => {
+      const contentList = [
+        { id: 't', type: 'text', value: 'hola' },
+        { id: 'i', type: 'image', value: [IMAGE_REF], text: 'pie' },
+      ];
+
+      await service.updateById(USER, A, undefined, contentList);
+
+      const [[{ data }]] = prisma.note.update.mock.calls as [
+        [{ data: { contentList: unknown } }],
+      ];
+      expect(data.contentList).toEqual(contentList);
+    });
+
+    it('rechaza imágenes de otra nota sin tocar la base', async () => {
+      await expect(
+        service.updateById(USER, B, undefined, [
+          { id: 'i', type: 'image', value: [IMAGE_REF] },
+        ]),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.note.update).not.toHaveBeenCalled();
+    });
+
+    it('rechaza el formato anterior (lista de textos)', async () => {
+      await expect(
+        service.updateById(USER, A, undefined, ['texto']),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('no acepta imágenes al crear una nota', async () => {
+      prisma.note.aggregate.mockResolvedValue({ _max: { position: null } });
+
+      await expect(
+        service.create(USER, 'Nueva', [
+          { id: 'i', type: 'image', value: [IMAGE_REF] },
+        ]),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.note.create).not.toHaveBeenCalled();
+    });
+  });
+
   describe('reorder (fechas)', () => {
     it('no toca la fecha de última modificación', async () => {
       tx.note.count.mockResolvedValue(2);

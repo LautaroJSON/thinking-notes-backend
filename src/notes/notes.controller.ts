@@ -45,11 +45,7 @@ export class NotesController {
       throw new UnauthorizedException('User not found in request');
     }
 
-    return this.notesService.create(
-      userId,
-      dto.title,
-      Array.isArray(dto.contentList) ? dto.contentList : [],
-    );
+    return this.notesService.create(userId, dto.title, dto.contentList ?? []);
   }
 
   // Debe declararse antes de @Put(':id') para que "order" no se tome como id

@@ -6,7 +6,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { Note } from '@prisma/client';
+import type { Note, Prisma } from '@prisma/client';
+import { parseContentList } from './content-list';
 import { isUUID } from 'class-validator';
 type CustomExceptionOptions = Omit<HttpExceptionOptions, 'code'> & {
   code: string;
@@ -19,8 +20,12 @@ export class NotesService {
   async create(
     userId: string,
     title: string,
-    contentList: string[] = [],
+    rawContentList: unknown = [],
   ): Promise<Note> {
+    const contentList = parseContentList(rawContentList, {
+      userId,
+      isCreate: true,
+    });
     // La nota nueva va al final de la lista del usuario
     const { _max } = await this.prisma.note.aggregate({
       where: { userId },
@@ -32,7 +37,7 @@ export class NotesService {
       data: {
         userId,
         title,
-        contentList,
+        contentList: contentList as unknown as Prisma.InputJsonValue,
         position,
       },
     });
@@ -60,8 +65,14 @@ export class NotesService {
     userId: string,
     noteId: string,
     title?: string,
-    contentList?: string[],
+    rawContentList?: unknown,
   ): Promise<Note> {
+    // Se valida antes de tocar la base: las imágenes deben estar en la
+    // carpeta de esta nota y del usuario autenticado
+    const contentList =
+      rawContentList === undefined
+        ? undefined
+        : parseContentList(rawContentList, { userId, noteId });
     try {
       const updatedNote = await this.prisma.note.update({
         where: {
@@ -70,7 +81,9 @@ export class NotesService {
         },
         data: {
           ...(title !== undefined && { title }),
-          ...(contentList !== undefined && { contentList }),
+          ...(contentList !== undefined && {
+            contentList: contentList as unknown as Prisma.InputJsonValue,
+          }),
           // Se marca a mano y no con @updatedAt: así reordenar (que también
           // hace update sobre `position`) no cuenta como una modificación.
           updatedAt: new Date(),
